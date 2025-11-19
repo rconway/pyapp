@@ -32,6 +32,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: container/Dockerfile
         push: true
         tags: |
           ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.tag }}

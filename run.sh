@@ -1,4 +1,8 @@
+#!/usr/bin/env bash
 
-"$(dirname "$0")"/build.sh
+"$(dirname "$0")"/create-venv.sh
 
-docker run --rm -p 8000:8000 -v $PWD/.env:/app/.env ghcr.io/rconway/authapp
+source "$(dirname "$0")"/venv/bin/activate
+trap deactivate EXIT
+
+uvicorn src.main:app --host 0.0.0.0 --port 8000

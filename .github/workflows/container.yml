@@ -1,6 +1,7 @@
-name: Build and Push to GHCR on SemVer Tag
+name: Build and Push Container
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'

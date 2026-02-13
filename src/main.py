@@ -27,7 +27,7 @@ oauth.register(
 
 @app.get("/world")
 async def world():
-    return {"message": "Hello, World!"}
+    return {"message": "Hello, world!"}
 
 
 @app.get("/login")

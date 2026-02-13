@@ -25,14 +25,17 @@ oauth.register(
     client_kwargs={"scope": "user:email"},
 )
 
+
 @app.get("/world")
 async def world():
     return {"message": "Hello, world!"}
+
 
 @app.get("/login")
 async def login(request: Request):
     redirect_uri = request.url_for("auth")
     return await oauth.github.authorize_redirect(request, redirect_uri)
+
 
 @app.get("/auth")
 async def auth(request: Request):
@@ -43,6 +46,7 @@ async def auth(request: Request):
     request.session["user"] = user_info
     return RedirectResponse(url="/hello")
 
+
 # Dependency to inject current user
 def get_current_user(request: Request):
     user = request.session.get("user")
@@ -50,15 +54,18 @@ def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
+
 @app.get("/hello")
 async def hello(user: dict = Depends(get_current_user)):
     display_name = user.get("name") or user.get("login")
     return {"message": f"Hello, {display_name}!"}
 
+
 @app.get("/me")
 async def me(user: dict = Depends(get_current_user)):
     # Return the full GitHub profile JSON stored in session
     return user
+
 
 # Custom exception handler: redirect browsers; JSON for API clients
 @app.exception_handler(HTTPException)
@@ -67,7 +74,4 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         accept = request.headers.get("accept", "")
         if "text/html" in accept:
             return RedirectResponse(url="/login")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})

@@ -6,4 +6,6 @@ else
   "$(dirname "$0")"/build.sh
 fi
 
-docker run --rm -p 8000:8000 -v $PWD/.env:/app/.env "ghcr.io/rconway/pyapp${TAG}"
+PORT="${PORT:-8000}"
+
+docker run --rm -p "$PORT:$PORT" -e PORT="${PORT}" -v "${PWD}/.env:/app/.env" "ghcr.io/rconway/pyapp${TAG}"

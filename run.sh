@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-"$(dirname "$0")"/create-venv.sh
+BIN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
-source "$(dirname "$0")"/venv/bin/activate
+"${BIN_DIR}"/create-venv.sh
+source "${BIN_DIR}"/venv/bin/activate
 trap deactivate EXIT
 
-uvicorn src.main:app --host 0.0.0.0 --port 8000
+uvicorn src.main:app --app-dir "${BIN_DIR}" --host 0.0.0.0 --port 8000

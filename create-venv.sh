@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-VENV_DIR="$(dirname "$0")"/venv
+BIN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
+VENV_DIR="${BIN_DIR}"/venv
 
 if [ -d "$VENV_DIR" ]; then
     echo "Virtual environment already exists at $VENV_DIR"

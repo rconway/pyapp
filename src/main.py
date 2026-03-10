@@ -7,17 +7,45 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SECRET_KEY = os.getenv("SECRET_KEY")
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+
+missing_env_vars = [
+    name
+    for name, value in {
+        "SECRET_KEY": SECRET_KEY,
+        "GITHUB_CLIENT_ID": GITHUB_CLIENT_ID,
+        "GITHUB_CLIENT_SECRET": GITHUB_CLIENT_SECRET,
+    }.items()
+    if not value
+]
+
+if missing_env_vars:
+    raise RuntimeError(
+        "Missing required environment variables: " + ", ".join(sorted(missing_env_vars))
+    )
+
+environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+is_production = environment in {"production", "prod"}
+
 app = FastAPI()
 
 # Session middleware for OAuth
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    https_only=is_production,
+    same_site="lax",
+    max_age=60 * 60 * 24 * 7,
+)
 
 # OAuth setup
 oauth = OAuth()
 oauth.register(
     name="github",
-    client_id=os.getenv("GITHUB_CLIENT_ID"),
-    client_secret=os.getenv("GITHUB_CLIENT_SECRET"),
+    client_id=GITHUB_CLIENT_ID,
+    client_secret=GITHUB_CLIENT_SECRET,
     authorize_url="https://github.com/login/oauth/authorize",
     access_token_url="https://github.com/login/oauth/access_token",
     # GitHub is not OIDC, so we call the API directly
@@ -45,6 +73,15 @@ async def auth(request: Request):
     user_info = resp.json()
     request.session["user"] = user_info
     return RedirectResponse(url="/hello")
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.pop("user", None)
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        return RedirectResponse(url="/world")
+    return {"message": "Logged out"}
 
 
 # Dependency to inject current user

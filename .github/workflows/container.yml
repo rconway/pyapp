@@ -3,6 +3,8 @@ name: Build and Push Container
 on:
   workflow_dispatch:
   push:
+    branches:
+      - '**'
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+'
@@ -18,9 +20,27 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Extract tag name
-      id: extract_tag
-      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    - name: Compute image tags
+      id: image_tags
+      shell: bash
+      run: |
+        if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          TAG="${GITHUB_REF_NAME}"
+          {
+            echo "tags<<EOF"
+            echo "ghcr.io/${GITHUB_REPOSITORY}:${TAG}"
+            echo "ghcr.io/${GITHUB_REPOSITORY}:latest"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+        else
+          # Convert branch names (e.g. feature/x) into Docker-compatible tags.
+          BRANCH_TAG="$(echo "${GITHUB_REF_NAME}" | sed -E 's#[^A-Za-z0-9_.-]#-#g')"
+          {
+            echo "tags<<EOF"
+            echo "ghcr.io/${GITHUB_REPOSITORY}:${BRANCH_TAG}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+        fi
 
     - name: Log in to GHCR
       uses: docker/login-action@v3
@@ -35,6 +55,4 @@ jobs:
         context: .
         file: container/Dockerfile
         push: true
-        tags: |
-          ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.tag }}
-          ghcr.io/${{ github.repository }}:latest
+        tags: ${{ steps.image_tags.outputs.tags }}

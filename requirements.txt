@@ -6,3 +6,4 @@ authlib
 python-dotenv
 httpx
 itsdangerous
+jinja2

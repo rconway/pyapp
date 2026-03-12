@@ -6,11 +6,13 @@ from starlette.middleware.sessions import SessionMiddleware
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 from dotenv import load_dotenv
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+OAUTH_REDIRECT_BASE_URL = os.getenv("OAUTH_REDIRECT_BASE_URL", "").strip().rstrip("/")
 PROVIDER_SETTINGS = {
     "github": {
         "protocol": "oauth2",
@@ -22,6 +24,15 @@ PROVIDER_SETTINGS = {
         "client_id_env": "GITHUB_CLIENT_ID",
         "client_secret_env": "GITHUB_CLIENT_SECRET",
         "scope": "user:email",
+    },
+    "google": {
+        "protocol": "oidc",
+        "label": "Google",
+        "oauth_client": "google",
+        "server_metadata_url": "https://accounts.google.com/.well-known/openid-configuration",
+        "client_id_env": "GOOGLE_CLIENT_ID",
+        "client_secret_env": "GOOGLE_CLIENT_SECRET",
+        "scope": "openid profile email",
     },
     # Example OIDC provider (disabled by default):
     # "example_oidc": {
@@ -134,6 +145,34 @@ def get_provider_client(provider_config: dict[str, Any]):
     return client
 
 
+def build_localhost_url(url: str) -> str:
+    parsed = urlsplit(url)
+    localhost_netloc = "localhost"
+    if parsed.port is not None:
+        localhost_netloc = f"localhost:{parsed.port}"
+    return urlunsplit(
+        (
+            parsed.scheme,
+            localhost_netloc,
+            parsed.path,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+
+def build_oauth_redirect_uri(request: Request, provider: str) -> str:
+    callback = request.url_for("auth_provider", provider=provider)
+    callback_url = str(callback)
+    callback_path = callback.path
+
+    # Allow explicit override for reverse proxies or deployed environments.
+    if OAUTH_REDIRECT_BASE_URL:
+        return f"{OAUTH_REDIRECT_BASE_URL}{callback_path}"
+
+    return callback_url
+
+
 async def fetch_user_info(
     provider: str,
     provider_config: dict[str, Any],
@@ -158,7 +197,11 @@ async def fetch_user_info(
             resp = await client.get(userinfo_endpoint, token=token)
             return resp.json()
 
-        claims = await client.parse_id_token(request, token)
+        # Authlib parse_id_token signature differs across versions.
+        try:
+            claims = await client.parse_id_token(token, nonce=None)
+        except TypeError:
+            claims = await client.parse_id_token(request, token)
         return dict(claims)
 
     raise HTTPException(
@@ -174,6 +217,14 @@ def build_session_user(provider: str, user_info: dict[str, Any]) -> dict[str, An
         "provider": provider,
         "profile": user_info,
     }
+
+
+def get_user_profile(user: dict[str, Any]) -> dict[str, Any]:
+    # New providers store profile under `profile`; GitHub remains flat for compatibility.
+    profile = user.get("profile")
+    if isinstance(profile, dict):
+        return profile
+    return user
 
 
 @app.get("/world")
@@ -200,7 +251,14 @@ async def login_provider(provider: str, request: Request):
     provider_config = get_provider_config(provider)
     client = get_provider_client(provider_config)
 
-    redirect_uri = request.url_for("auth_provider", provider=provider)
+    # Keep cookie host and callback host aligned for loopback development.
+    if not OAUTH_REDIRECT_BASE_URL:
+        login_url = str(request.url)
+        parsed_login_url = urlsplit(login_url)
+        if parsed_login_url.hostname == "0.0.0.0":
+            return RedirectResponse(url=build_localhost_url(login_url), status_code=307)
+
+    redirect_uri = build_oauth_redirect_uri(request, provider)
     return await client.authorize_redirect(request, redirect_uri)
 
 
@@ -234,14 +292,20 @@ def get_current_user(request: Request):
 
 @app.get("/hello")
 async def hello(user: dict = Depends(get_current_user)):
-    display_name = user.get("name") or user.get("login")
+    profile = get_user_profile(user)
+    display_name = (
+        profile.get("name")
+        or profile.get("login")
+        or profile.get("email")
+        or profile.get("sub")
+    )
     return {"message": f"Hello, {display_name}!"}
 
 
 @app.get("/me")
 async def me(user: dict = Depends(get_current_user)):
-    # Return the full GitHub profile JSON stored in session
-    return user
+    # Return a provider profile shape for new providers while preserving GitHub compatibility.
+    return get_user_profile(user)
 
 
 # Custom exception handler: redirect browsers; JSON for API clients

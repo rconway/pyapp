@@ -11,11 +11,15 @@ Create a `.env` file in the repo root:
 ```env
 GITHUB_CLIENT_ID=your_github_oauth_app_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_app_client_secret
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 # Optional example OIDC provider credentials:
 # EXAMPLE_OIDC_CLIENT_ID=your_example_oidc_client_id
 # EXAMPLE_OIDC_CLIENT_SECRET=your_example_oidc_client_secret
 SECRET_KEY=your_generated_secret
 ENVIRONMENT=development
+# Optional: force OAuth callback base URL (useful behind proxies)
+# OAUTH_REDIRECT_BASE_URL=https://your-domain.example
 ```
 
 Generate a strong session secret with:
@@ -27,6 +31,13 @@ Generate a strong session secret with:
 For your GitHub OAuth app, use this callback URL during local development:
 
 `http://localhost:8000/auth/github`
+
+For your Google OAuth client, use this callback URL during local development:
+
+`http://localhost:8000/auth/google`
+
+If your app runs behind a proxy/load balancer, set `OAUTH_REDIRECT_BASE_URL`
+so provider callbacks use the externally visible HTTPS host.
 
 For additional providers, use the same pattern: `/auth/{provider}`.
 
@@ -54,9 +65,11 @@ Container run uses: `uvicorn main:app` (the Docker image copies `src/` directly 
 - `GET /login`: provider selector page rendered from configured providers.
 - `GET /login/github`: starts GitHub OAuth flow.
 - `GET /auth/github`: GitHub OAuth callback; stores GitHub profile JSON in session.
+- `GET /login/google`: starts Google OAuth flow.
+- `GET /auth/google`: Google OAuth callback; stores Google profile JSON in session.
 - `GET /logout`: clears session user; redirects browsers to `/world` and returns JSON for API clients.
 - `GET /hello`: protected; returns greeting using authenticated user.
-- `GET /me`: protected; returns stored GitHub profile JSON.
+- `GET /me`: protected; returns stored provider profile JSON.
 
 ## Validation checks
 

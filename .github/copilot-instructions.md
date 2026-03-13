@@ -20,9 +20,9 @@
 - Run container: `PORT=8000 ./container/run.sh` (runs `uvicorn main:app`)
 - No formal test suite is present; validate changes with:
   - `python -m compileall src`
-  - `curl -i http://localhost:8000/world`
-  - `curl -i http://localhost:8000/me` (expect 401 JSON when unauthenticated)
-  - `curl -i -H 'Accept: text/html' http://localhost:8000/me` (expect redirect to `/login`)
+  - `curl -i http://127.0.0.1:8000/world`
+  - `curl -i http://127.0.0.1:8000/me` (expect 401 JSON when unauthenticated)
+  - `curl -i -H 'Accept: text/html' http://127.0.0.1:8000/me` (expect redirect to `/login`)
 
 ## Project Conventions
 - Keep local/container app-path distinction intact: local uses `src.main:app`, container uses `main:app` because `container/Dockerfile` copies `src/` contents directly to `/app`.

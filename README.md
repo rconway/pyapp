@@ -30,11 +30,11 @@ Generate a strong session secret with:
 
 For your GitHub OAuth app, use this callback URL during local development:
 
-`http://localhost:8000/auth/github`
+`http://127.0.0.1:8000/auth/github`
 
 For your Google OAuth client, use this callback URL during local development:
 
-`http://localhost:8000/auth/google`
+`http://127.0.0.1:8000/auth/google`
 
 If your app runs behind a proxy/load balancer, set `OAUTH_REDIRECT_BASE_URL`
 so provider callbacks use the externally visible HTTPS host.
@@ -49,6 +49,8 @@ For additional providers, use the same pattern: `/auth/{provider}`.
 ```
 
 Local run uses: `uvicorn src.main:app --host 0.0.0.0 --port 8000`.
+
+`./run.sh` prints a local-access hint using `http://127.0.0.1:8000` after the Uvicorn startup line.
 
 ### 3) Run in container
 
@@ -77,9 +79,9 @@ With the app running:
 
 ```bash
 python -m compileall src
-curl -i http://localhost:8000/world
-curl -i http://localhost:8000/me
-curl -i -H 'Accept: text/html' http://localhost:8000/me
+curl -i http://127.0.0.1:8000/world
+curl -i http://127.0.0.1:8000/me
+curl -i -H 'Accept: text/html' http://127.0.0.1:8000/me
 ```
 
 Expected unauthenticated behavior for `/me`:

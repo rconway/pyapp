@@ -6,7 +6,6 @@ from starlette.middleware.sessions import SessionMiddleware
 import os
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit, urlunsplit
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -145,22 +144,6 @@ def get_provider_client(provider_config: dict[str, Any]):
     return client
 
 
-def build_localhost_url(url: str) -> str:
-    parsed = urlsplit(url)
-    localhost_netloc = "localhost"
-    if parsed.port is not None:
-        localhost_netloc = f"localhost:{parsed.port}"
-    return urlunsplit(
-        (
-            parsed.scheme,
-            localhost_netloc,
-            parsed.path,
-            parsed.query,
-            parsed.fragment,
-        )
-    )
-
-
 def build_oauth_redirect_uri(request: Request, provider: str) -> str:
     callback = request.url_for("auth_provider", provider=provider)
     callback_url = str(callback)
@@ -250,13 +233,6 @@ async def login(request: Request):
 async def login_provider(provider: str, request: Request):
     provider_config = get_provider_config(provider)
     client = get_provider_client(provider_config)
-
-    # Keep cookie host and callback host aligned for loopback development.
-    if not OAUTH_REDIRECT_BASE_URL:
-        login_url = str(request.url)
-        parsed_login_url = urlsplit(login_url)
-        if parsed_login_url.hostname == "0.0.0.0":
-            return RedirectResponse(url=build_localhost_url(login_url), status_code=307)
 
     redirect_uri = build_oauth_redirect_uri(request, provider)
     return await client.authorize_redirect(request, redirect_uri)

@@ -6,7 +6,6 @@ BIN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${BIN_DIR}"/venv/bin/activate
 trap deactivate EXIT
 
-
 GREEN=$'\033[32m'
 BOLD_RED=$'\033[1;31m'
 RESET=$'\033[0m'

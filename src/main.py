@@ -1,12 +1,15 @@
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from authlib.integrations.starlette_client import OAuth
-from starlette.middleware.sessions import SessionMiddleware
 import os
+import time
 from pathlib import Path
 from typing import Any
+
+from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
@@ -81,6 +84,17 @@ environment = os.getenv("ENVIRONMENT", "development").strip().lower()
 is_production = environment in {"production", "prod"}
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total number of HTTP requests",
+    ["method", "path", "status_code"],
+)
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request latency in seconds",
+    ["method", "path"],
+)
 
 app = FastAPI()
 
@@ -208,6 +222,40 @@ def get_user_profile(user: dict[str, Any]) -> dict[str, Any]:
     if isinstance(profile, dict):
         return profile
     return user
+
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    path = request.url.path
+    start_time = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        REQUEST_COUNT.labels(
+            method=request.method,
+            path=path,
+            status_code="500",
+        ).inc()
+        REQUEST_LATENCY.labels(method=request.method, path=path).observe(
+            time.perf_counter() - start_time
+        )
+        raise
+
+    REQUEST_COUNT.labels(
+        method=request.method,
+        path=path,
+        status_code=str(response.status_code),
+    ).inc()
+    REQUEST_LATENCY.labels(method=request.method, path=path).observe(
+        time.perf_counter() - start_time
+    )
+    return response
+
+
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/world")

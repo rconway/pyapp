@@ -64,6 +64,7 @@ Container run uses: `uvicorn main:app` (the Docker image copies `src/` directly 
 ## Endpoints
 
 - `GET /world`: public health endpoint.
+- `GET /metrics`: Prometheus scrape endpoint with request count and latency metrics.
 - `GET /login`: provider selector page rendered from configured providers.
 - `GET /login/github`: starts GitHub OAuth flow.
 - `GET /auth/github`: GitHub OAuth callback; stores GitHub profile JSON in session.
@@ -80,6 +81,7 @@ With the app running:
 ```bash
 python -m compileall src
 curl -i http://127.0.0.1:8000/world
+curl -i http://127.0.0.1:8000/metrics
 curl -i http://127.0.0.1:8000/me
 curl -i -H 'Accept: text/html' http://127.0.0.1:8000/me
 ```

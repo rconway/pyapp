@@ -7,3 +7,4 @@ python-dotenv
 httpx
 itsdangerous
 jinja2
+prometheus-client

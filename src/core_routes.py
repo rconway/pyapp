@@ -1,7 +1,13 @@
-from fastapi import APIRouter, Depends
+from collections.abc import Callable
+from typing import Any
+
+from fastapi import APIRouter, Depends, Request
 
 
-def create_core_router(get_current_user, get_user_profile):
+def create_core_router(
+    get_current_user: Callable[[Request], dict[str, Any]],
+    get_user_profile: Callable[[dict[str, Any]], dict[str, Any]],
+):
     core_router = APIRouter()
 
     @core_router.get("/world")
@@ -9,7 +15,7 @@ def create_core_router(get_current_user, get_user_profile):
         return {"message": "Hello, world!"}
 
     @core_router.get("/hello")
-    async def hello(user: dict = Depends(get_current_user)):
+    async def hello(user: dict[str, Any] = Depends(get_current_user)):
         profile = get_user_profile(user)
         display_name = (
             profile.get("name")
@@ -20,7 +26,7 @@ def create_core_router(get_current_user, get_user_profile):
         return {"message": f"Hello, {display_name}!"}
 
     @core_router.get("/me")
-    async def me(user: dict = Depends(get_current_user)):
+    async def me(user: dict[str, Any] = Depends(get_current_user)):
         # Return a provider profile shape for new providers while preserving GitHub compatibility.
         return get_user_profile(user)
 

@@ -1,28 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
-if __package__:
-    from .auth_routes import (
-        SECRET_KEY,
-        auth_router,
-        custom_http_exception_handler,
-        get_current_user,
-        get_user_profile,
-        is_production,
-    )
-    from .core_routes import create_core_router
-    from .metrics_routes import metrics_router, prometheus_middleware
-else:
-    from auth_routes import (
-        SECRET_KEY,
-        auth_router,
-        custom_http_exception_handler,
-        get_current_user,
-        get_user_profile,
-        is_production,
-    )
-    from core_routes import create_core_router
-    from metrics_routes import metrics_router, prometheus_middleware
+from auth_routes import (
+    SECRET_KEY,
+    auth_router,
+    custom_http_exception_handler,
+    get_current_user,
+    get_user_profile,
+    is_production,
+)
+from core_routes import create_core_router
+from metrics_routes import metrics_router, prometheus_middleware
 
 app = FastAPI()
 

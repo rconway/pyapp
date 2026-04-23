@@ -48,7 +48,7 @@ For additional providers, use the same pattern: `/auth/{provider}`.
 ./run.sh
 ```
 
-Local run uses: `uvicorn src.main:app --host 0.0.0.0 --port 8000`.
+Local run uses: `uvicorn main:app --app-dir ./src --host 0.0.0.0 --port 8000`.
 
 `./run.sh` prints a local-access hint using `http://127.0.0.1:8000` after the Uvicorn startup line.
 

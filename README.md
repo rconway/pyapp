@@ -93,7 +93,7 @@ Expected unauthenticated behavior for `/me`:
 
 ## Adding Providers
 
-- Add a provider entry to `PROVIDER_SETTINGS` in `src/main.py`.
+- Add a provider entry to `PROVIDER_SETTINGS` in `src/auth_routes.py`.
 - Required common keys:
 	- `label`: display text on the selector page
 	- `oauth_client`: registered Authlib client name
@@ -106,6 +106,6 @@ Expected unauthenticated behavior for `/me`:
 - For `protocol: oidc`, configure:
 	- `server_metadata_url`
 	- Optional `userinfo_endpoint` (if omitted, ID token claims are used)
-- A ready-to-copy disabled OIDC example is included in `src/main.py` under `PROVIDER_SETTINGS`.
+- A ready-to-copy disabled OIDC example is included in `src/auth_routes.py` under `PROVIDER_SETTINGS`.
 - OAuth clients are registered automatically from provider settings.
 - The generic routes `/login/{provider}` and `/auth/{provider}` handle dispatch.
